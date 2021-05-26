@@ -8,7 +8,7 @@ const { bn, tokens, bnToInt, timeInDays, timeInDate, readArgumentsFile, deployCo
 async function main() {
   // Version Check
   console.log(chalk.bgBlack.bold.green(`\n✌️  Running Version Checks \n-----------------------\n`))
-  const versionDetails = versionVerifier(["asd"])
+  const versionDetails = versionVerifier(["epnsProxyAddress"])
   console.log(chalk.bgWhite.bold.black(`\n\t\t\t\n Version Control Passed \n\t\t\t\n`))
 
   // First deploy all contracts
@@ -27,7 +27,7 @@ async function main() {
   console.log(chalk.bgWhite.bold.black(`\n\t\t\t\n ✅ Version upgraded    \n\t\t\t\n`))
 }
 
-async function setupAllContracts() {
+async function setupAllContracts(versionDetails) {
   let deployedContracts = []
   console.log("📡 Deploy \n");
   // auto deploy to read contract directory and deploy them all (add ".args" files for arguments)
@@ -36,53 +36,15 @@ async function setupAllContracts() {
   // custom deploy (to use deployed addresses dynamically for example:)
   const [adminSigner, aliceSigner, bobSigner, eventualAdmin] = await ethers.getSigners();
 
-  // const admin = '0xA1bFBd2062f298a46f3E4160C89BEDa0716a3F51'; //admin of timelock, gets handed over to the governor.
-  const AAVE_LENDING_POOL = "0x1c8756FD2B28e9426CDBDcC7E3c4d64fa9A54728";
-  const DAI = "0xf80A32A835F79D7787E8a8ee5721D0fEaFd78108";
-  const ADAI = "0xcB1Fe6F440c49E9290c3eb7f158534c2dC374201";
-  const referralCode = 0;
-  const delay = 0; // uint for the timelock delay
+  const EPNSCoreV3 = await deployContract("EPNSCoreV3", [], "EPNSCoreV3");
+  deployedContracts.push(EPNSCoreV3)
 
-  // const epns = await deploy("EPNS");
-  const epns = await deployContract("EPNS", [], "EPNS");
-  deployedContracts.push(epns)
+  const EPNSProxy = await ethers.getContractFactory("EPNSProxy")
+  const epnsProxyInstance = EPNSProxy.attach(versionDetails.deploy.args.epnsProxyAddress)
 
-  const epnsLogic = await deployContract("EPNSCoreV1", [], "EPNSCoreV1");
-  deployedContracts.push(epnsLogic)
-
-  const timelock = await deployContract("Timelock", [adminSigner.address, delay], "Timelock"); // governor and a guardian,
-  deployedContracts.push(timelock)
-
-  const governorAlpha = await deployContract("GovernorAlpha", [
-    timelock.address,
-    epns.address,
-    adminSigner.address
-  ]
-  , "GovernorAlpha");
-  deployedContracts.push(governorAlpha)
-
-  const currBlock = await ethers.provider.getBlock('latest');
-  
-  const eta = currBlock.timestamp;
-  const coder = new ethers.utils.AbiCoder();
-
-  let data = coder.encode(['address'], [governorAlpha.address]);
-
-  await timelock.functions.queueTransaction(timelock.address, '0', 'setPendingAdmin(address)', data, (eta + 1));
-  await ethers.provider.send('evm_mine');
-  await ethers.provider.send('evm_mine');
-  await timelock.functions.executeTransaction(timelock.address, '0', 'setPendingAdmin(address)', data, (eta + 1));
-
-  const coreProxy = await deployContract("EPNSProxy", [
-    epnsLogic.address,
-    governorAlpha.address,
-    AAVE_LENDING_POOL,
-    DAI,
-    ADAI,
-    referralCode,
-    {gasLimit: 8000000}
-  ], "EPNSProxy");
-  deployedContracts.push(coreProxy)
+  console.log(chalk.bgWhite.bold.black(`\n\t\t\t\n ✅ Upgrading Contract to`), chalk.magenta(`${EPNSCoreV3.address} \n\t\t\t\n`))
+  await epnsProxyInstance.upgradeTo(EPNSCoreV3.address);
+  console.log(chalk.bgWhite.bold.black(`\n\t\t\t\n ✅ Contracts Upgraded  \n\t\t\t\n`))
 
   return deployedContracts
 }
