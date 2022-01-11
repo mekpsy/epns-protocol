@@ -18,13 +18,19 @@ const deploy = {
     hardhat: {
       version: 1
     },
+    polygon: {
+      version: 1
+    },
+    polygonMumbai: {
+      version: 1
+    },
     localhost: {
       version: 1
     }
   },
   args: {
     epnsProxyAddress: null,
-    epnsCoreAdmin: null
+    epnsCommAdmin: null
   }
 }
 

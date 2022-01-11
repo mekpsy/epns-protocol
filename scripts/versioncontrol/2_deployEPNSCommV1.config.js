@@ -23,7 +23,7 @@ const deploy = {
     }
   },
   args: {
-    epnsProxyAddress: null
+    chainName: null
   }
 }
 

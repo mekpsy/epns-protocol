@@ -24,7 +24,7 @@ const deploy = {
   },
   args: {
     epnsProxyAddress: null,
-    epnsCoreAdmin: null
+    epnsCommAdmin: null
   }
 }
 
